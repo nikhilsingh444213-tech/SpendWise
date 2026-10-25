@@ -102,10 +102,6 @@ function App() {
 
   const [activePage, setActivePage] = useState("Dashboard");
 
-  const [editingId, setEditingId] = useState(null);
-
-  console.log("Editing ID:", editingId, "Show Form:", showForm);
-
 
 
 
@@ -192,35 +188,6 @@ function App() {
 
   const balance = income - expenses;
 
-  
-const categoryColors = {
-  "Food & groceries": "#7867f5",
-  Food: "#7867f5",
-  Transport: "#25b99a",
-  Bills: "#f2a65a",
-  Entertainment: "#e879b9",
-  Shopping: "#6096fd",
-  Other: "#94a3b8",
-};
-
-const expenseBreakdown = Object.values(
-  transactions
-    .filter((transaction) => transaction.type === "expense")
-    .reduce((groups, transaction) => {
-      const name = transaction.category || "Other";
-
-      if (!groups[name]) {
-        groups[name] = {
-          name,
-          amount: 0,
-          color: categoryColors[name] || "#94a3b8",
-        };
-      }
-
-      groups[name].amount += Number(transaction.amount);
-      return groups;
-    }, {})
-).sort((a, b) => b.amount - a.amount);
 
 
   async function addTransaction(event) {
@@ -263,24 +230,35 @@ const expenseBreakdown = Object.values(
 
 
 
+    const response = await fetch(
 
-const url = editingId
-  ? `http://localhost:5000/api/transactions/${editingId}`
-  : "http://localhost:5000/api/transactions";
+      "http://localhost:5000/api/transactions",
 
-const response = await fetch(url, {
-  method: editingId ? "PUT" : "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    title: title.trim(),
-    amount: numericAmount,
-    category: type === "income" ? "Income" : category,
-    type,
-  }),
-});
+      {
 
+        method: "POST",
+
+        headers: {
+
+          "Content-Type": "application/json",
+
+        },
+
+        body: JSON.stringify({
+
+          title: title.trim(),
+
+          amount: numericAmount,
+
+          category: type === "income" ? "Income" : category,
+
+          type,
+
+        }),
+
+      }
+
+    );
 
 
 
@@ -300,24 +278,13 @@ const response = await fetch(url, {
 
 
 
+    setTransactions((current) => [
 
-const savedTransaction = formatTransaction(data.transaction);
+      formatTransaction(data.transaction),
 
-if (editingId) {
-  setTransactions((current) =>
-    current.map((item) =>
-      item.id === savedTransaction.id
-        ? savedTransaction
-        : item
-    )
-  );
-} else {
-  setTransactions((current) => [
-    savedTransaction,
-    ...current,
-  ]);
-}
+      ...current,
 
+    ]);
 
 
 
@@ -328,8 +295,6 @@ if (editingId) {
     setCategory("Food");
 
     setType("expense");
-
-    setEditingId(null);
 
     setShowForm(false);
 
@@ -351,35 +316,6 @@ if (editingId) {
 
 }
 
-// Delete transaction function
-async function handleDelete(id) {
-  const confirmed = window.confirm(
-    "Do you want to delete this transaction?"
-  );
-
-  if (!confirmed) return;
-
-  try {
-    const response = await fetch(
-      `http://localhost:5000/api/transactions/${id}`,
-      {
-        method: "DELETE",
-      }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok || !data.success) {
-      throw new Error(data.message || "Can not delete.");
-    }
-
-    setTransactions((current) =>
-      current.filter((item) => item.id !== id)
-    );
-  } catch (error) {
-    alert(error.message || "Transaction can not delete.");
-  }
-}
 
 
       return (
@@ -666,9 +602,15 @@ async function handleDelete(id) {
 
 
 
-                    
-                    {expenseBreakdown.map((item) => (
+                {[
 
+                  { name: "Food & groceries", amount: 1800, color: "#7867f5" },
+
+                  { name: "Bills", amount: 1200, color: "#25b99a" },
+
+                  { name: "Entertainment", amount: 650, color: "#f2a65a" },
+
+                ].map((item) => (
 
                   <div className="category-row" key={item.name}>
 
@@ -686,12 +628,13 @@ async function handleDelete(id) {
 
                         className="progress-fill"
 
-                       
-                          style={{
-                            width: `${(item.amount / 3650) * 100}%`,
-                            background: item.color,
-                          }}
+                        style={{
 
+                        width: `${(item.amount / 3650) * 100}%`,
+
+                          background: item.color,
+
+                        }}
 
                       />
 
@@ -990,7 +933,6 @@ function TransactionTable({ transactions, onViewAll }) {
                 <th>DATE</th>
 
                 <th className="amount-cell">AMOUNT</th>
-                <th>Actions</th>
 
               </tr>
 
@@ -1027,33 +969,6 @@ function TransactionTable({ transactions, onViewAll }) {
                     {item.type === "income" ? "+" : "−"}{money(item.amount)}
 
                   </td>
-                  
-                      <td>
-                        <button
-                          type="button"
-                          onClick={() => {
-                             console.log("EDIT BUTTON CLICKED!", item.id);
-                             console.log("Setter type:", typeof setEditingId);
-
-                            setEditingId(item.id);
-                            setTitle(item.title);
-                            setAmount(String(item.amount));
-                            setCategory(item.category);
-                            setType(item.type);
-                            setFormError("");
-                            setShowForm(true);
-                          }}
-                        >
-                          Edit
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(item.id)}
-                        >
-                          Delete
-                        </button>
-                      </td>
 
                 </tr>
 
